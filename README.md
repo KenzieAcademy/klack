@@ -12,7 +12,7 @@ Install the dependencies (Express) by running:
 ## Step three
 Find your IP address on the local network. On OS X, you may be able to do this by running:
 
-    ifconfig en0 | grep "inet "
+    ifconfig | grep inet
     
 which should yield a line of output like:
 
