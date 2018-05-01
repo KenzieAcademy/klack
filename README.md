@@ -27,7 +27,7 @@ Run the app with the command:
     node app
 
 ## Step five
-Connect to http://**your.IP.address.here**:3000/ from your web browser AMD from your friends and neighbors browsers!
+Connect to http://**your.IP.address.here**:3000/ from your web browser AND from your friends and neighbors browsers!
 This is a multiuser messaging app, the more the merrier.
 Enter a nickname at the prompt upon loading the page.
 
