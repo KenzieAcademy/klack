@@ -1,7 +1,6 @@
 package main
 
-import (
-	"encoding/json"
+import ( "encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -56,6 +55,7 @@ func main() {
 	http.HandleFunc("/messages", MessageHandler)
 	http.Handle("/", http.FileServer(http.Dir("public")))
 
+    // start the server
 	fmt.Println("Serving on port 3000")
 	http.ListenAndServe(":3000", nil)
 }
@@ -104,12 +104,9 @@ func MessageHandler(rw http.ResponseWriter, r *http.Request) {
 	case "POST":
 		timestamp := time.Now()
 		decoder := json.NewDecoder(r.Body)
-        var message Message
-        err := decoder.Decode(&message)
 
-        if err != nil {
-            panic(err)
-        }
+        var message Message
+        decoder.Decode(&message)
 
         // add a timestamp to each incoming message.
         message.Timestamp = timestamp
@@ -120,7 +117,6 @@ func MessageHandler(rw http.ResponseWriter, r *http.Request) {
         // update the posting user's last access timestamp (so we know they are
         // active)
         users[message.Sender] = timestamp
-
 
         // Send back the successful response.
         js, _ := json.Marshal(message)
