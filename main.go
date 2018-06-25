@@ -1,28 +1,29 @@
 package main
 
-import ( "encoding/json"
+import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
-    "strings"
 )
 
 // Custom data types
 type SimpleUser struct {
-    Name   string `json:"name"`
-    Active bool `json:"active"`
+	Name   string `json:"name"`
+	Active bool   `json:"active"`
 }
 
 type MessageResponse struct {
-    Messages []*Message `json:"messages"`
-    Users []*SimpleUser `json:"users"`
+	Messages []*Message    `json:"messages"`
+	Users    []*SimpleUser `json:"users"`
 }
 
 type Message struct {
-    Message string `json:"message"`
-    Sender string `json:"sender"`
-    Timestamp time.Time `json:"timestamp"`
+	Message   string    `json:"message"`
+	Sender    string    `json:"sender"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // List of all messages
@@ -48,78 +49,80 @@ func (n ByName) Less(i, j int) bool {
 }
 
 func main() {
-    users = make(map[string]time.Time) 
-    messages = make([]*Message, 0)
+	users = make(map[string]time.Time)
+	messages = make([]*Message, 0)
 
 	// routing
 	http.HandleFunc("/messages", MessageHandler)
 	http.Handle("/", http.FileServer(http.Dir("public")))
 
-    // start the server
-	fmt.Println("Serving on port 3000")
-	http.ListenAndServe(":3000", nil)
+	// start the server
+	fmt.Println("Serving on port 5000")
+	http.ListenAndServe(":5000", nil)
 }
 
 func MessageHandler(rw http.ResponseWriter, r *http.Request) {
-    // set the appropriate content type for headers
-    rw.Header().Set("Content-Type", "application/json")
+	// set the appropriate content type for headers
+	rw.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
 	case "GET":
-        // get the current time
+		// get the current time
 		now := time.Now()
 
-        // consider users active if they have connected (GET or POST) in last 15
-        // seconds
+		// consider users active if they have connected (GET or POST) in last 15
+		// seconds
 		requireActiveSince := now.Add(time.Second * 15 * -1)
 
 		query := r.URL.Query()
-        var usersSimple = make([]*SimpleUser, 0)
+		var usersSimple = make([]*SimpleUser, 0)
 
-        // create a new list of users with a flag indicating whether they have
-        // been active recently
+		// create a new list of users with a flag indicating whether they have
+		// been active recently
 		for name, lastActive := range users {
-            usersSimple = append(usersSimple, &SimpleUser{
-                Name:   name,
-                Active: lastActive.After(requireActiveSince),
-            })
+			usersSimple = append(usersSimple, &SimpleUser{
+				Name:   name,
+				Active: lastActive.After(requireActiveSince),
+			})
 		}
 
-        // sort the list of users alphabetically by name
+		// sort the list of users alphabetically by name
 		sort.Sort(ByName(usersSimple))
 
-        users[query["for"][0]] = now
+		users[query["for"][0]] = now
 
-        // send the latest 40 messages and the full user list, annotated with
-        // active flags
-        messageResponse := &MessageResponse{
-            Messages: messages,
-            Users: usersSimple,
-        }
+		// send the latest 40 messages and the full user list, annotated with
+		// active flags
+		if len(messages) > 40 {
+			messages = messages[:40]
+		}
+		messageResponse := &MessageResponse{
+			Messages: messages,
+			Users:    usersSimple,
+		}
 
-        js, _ := json.Marshal(messageResponse)
-        rw.Write(js)
-        
+		js, _ := json.Marshal(messageResponse)
+		rw.Write(js)
 
 	case "POST":
 		timestamp := time.Now()
 		decoder := json.NewDecoder(r.Body)
 
-        var message Message
-        decoder.Decode(&message)
+		var message Message
+		decoder.Decode(&message)
 
-        // add a timestamp to each incoming message.
-        message.Timestamp = timestamp
+		// add a timestamp to each incoming message.
+		message.Timestamp = timestamp
 
-        // append the new message to the message list
-        messages = append(messages, &message)
+		// append the new message to the message list
+		messages = append(messages, &message)
 
-        // update the posting user's last access timestamp (so we know they are
-        // active)
-        users[message.Sender] = timestamp
+		// update the posting user's last access timestamp (so we know they are
+		// active)
+		users[message.Sender] = timestamp
 
-        // Send back the successful response.
-        js, _ := json.Marshal(message)
-        rw.Write(js)
+		// Send back the successful response.
+		js, _ := json.Marshal(message)
+		rw.Write(js)
 	}
 }
